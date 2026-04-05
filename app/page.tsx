@@ -1,16 +1,18 @@
-import React from 'react';
-import { X, Music, Code2, Cpu, ExternalLink, Mail } from 'lucide-react';
+import Link from "next/link";
+import { X, Code2, Cpu, ExternalLink } from "lucide-react";
+import { featuredApps } from "@/data/apps";
 
-export default function Portfolio() {
+export default function HomePage() {
+  const highlights = featuredApps(4);
+
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
-      {/* Hero Section */}
-      <header className="bg-white border-b border-slate-200">
-        <div className="max-w-5xl mx-auto px-6 py-20 text-center">
-          <h1 className="text-5xl font-bold tracking-tight mb-4 text-slate-900">
+    <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
+      <header className="border-b border-slate-200 bg-white">
+        <div className="mx-auto max-w-5xl px-6 py-16 text-center sm:py-20">
+          <h1 className="mb-4 text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
             洩矢 ケロ / Moriya Kero
           </h1>
-          <p className="text-xl text-slate-600 mb-8">
+          <p className="mb-8 text-lg text-slate-600 sm:text-xl">
             Kyoto University / Engineering / Information Science
           </p>
           <div className="flex justify-center gap-4">
@@ -18,7 +20,7 @@ export default function Portfolio() {
               href="https://x.com/moriyakero2000"
               target="_blank"
               rel="noopener noreferrer"
-              className="p-2 bg-slate-900 text-white rounded-full hover:bg-slate-700 transition"
+              className="rounded-full bg-slate-900 p-2 text-white transition hover:bg-slate-700"
               aria-label="X（旧Twitter）"
             >
               <X size={24} />
@@ -27,11 +29,12 @@ export default function Portfolio() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-6 py-16">
-        {/* About Section */}
+      <main className="mx-auto max-w-5xl px-6 py-16">
         <section className="mb-20">
-          <h2 className="text-2xl font-bold mb-8 border-l-4 border-indigo-500 pl-4">About Me</h2>
-          <div className="grid md:grid-cols-2 gap-12 text-slate-700 leading-relaxed">
+          <h2 className="mb-8 border-l-4 border-indigo-500 pl-4 text-2xl font-bold">
+            About Me
+          </h2>
+          <div className="grid gap-12 text-slate-700 md:grid-cols-2 md:leading-relaxed">
             <p>
               京都大学工学部情報学科計算機科学コース
               <br />
@@ -45,51 +48,94 @@ export default function Portfolio() {
           </div>
         </section>
 
-        {/* Projects Section */}
         <section className="mb-20">
-          <h2 className="text-2xl font-bold mb-8 border-l-4 border-indigo-500 pl-4">Projects</h2>
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Project 1: LiveLog */}
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:border-indigo-300 transition group">
-              <div className="flex justify-between items-start mb-4">
-                <Code2 className="text-indigo-600" size={32} />
-                <ExternalLink className="text-slate-300 group-hover:text-indigo-500" size={20} />
-              </div>
-              <h3 className="text-xl font-bold mb-2">ZETS-movie-share</h3>
-              <p className="text-slate-600 text-sm mb-4">
-                軽音サークルのライブ運営を支えるフルスタックWebアプリ。エントリー管理からタイムテーブル作成まで。
-              </p>
-              <div className="flex gap-2">
-                <span className="px-3 py-1 bg-slate-100 text-xs rounded-full">Next.js</span>
-                <span className="px-3 py-1 bg-slate-100 text-xs rounded-full">Prisma</span>
-                <span className="px-3 py-1 bg-slate-100 text-xs rounded-full">Supabase</span>
-              </div>
-            </div>
-
-            {/* Project 2: Robotics */}
-            <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 hover:border-indigo-300 transition group">
-              <div className="flex justify-between items-start mb-4">
-                <Cpu className="text-emerald-600" size={32} />
-              </div>
-              <h3 className="text-xl font-bold mb-2">ROS Robotics</h3>
-              <p className="text-slate-600 text-sm mb-4">
-                ROSを用いたロボット制御アルゴリズムの開発。画像認識やパスプランニングの実装。計算機科学実験4前半。もうやりたくない。
-              </p>
-              <div className="flex gap-2">
-                <span className="px-3 py-1 bg-slate-100 text-xs rounded-full">C++ / Python</span>
-                <span className="px-3 py-1 bg-slate-100 text-xs rounded-full">ROS</span>
-                <span className="px-3 py-1 bg-slate-100 text-xs rounded-full">OpenCV</span>
-              </div>
-            </div>
+          <div className="mb-8 flex flex-wrap items-end justify-between gap-4 border-l-4 border-indigo-500 pl-4">
+            <h2 className="text-2xl font-bold">Projects</h2>
+            <Link
+              href="/apps"
+              className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
+            >
+              アプリ一覧へ →
+            </Link>
+          </div>
+          <div className="grid gap-6 md:grid-cols-2">
+            {highlights.map((app) => {
+              const isRos =
+                app.id.includes("ros") || app.id.includes("robot");
+              return (
+                <div
+                  key={app.id}
+                  className="group rounded-xl border border-slate-200 bg-white p-6 shadow-sm transition hover:border-indigo-300"
+                >
+                  <div className="mb-4 flex items-start justify-between">
+                    {isRos ? (
+                      <Cpu className="text-emerald-600" size={32} />
+                    ) : (
+                      <Code2 className="text-indigo-600" size={32} />
+                    )}
+                    {app.url ? (
+                      <a
+                        href={app.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-slate-300 transition group-hover:text-indigo-500"
+                        aria-label={`${app.title} を開く`}
+                      >
+                        <ExternalLink size={20} />
+                      </a>
+                    ) : null}
+                  </div>
+                  <h3 className="mb-2 text-xl font-bold">{app.title}</h3>
+                  <p className="mb-4 text-sm text-slate-600">{app.description}</p>
+                  <div className="flex flex-wrap gap-2">
+                    {app.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="rounded-full bg-slate-100 px-3 py-1 text-xs"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </section>
 
-        {/* Skills Section */}
+        <section className="mb-8 rounded-xl border border-dashed border-slate-300 bg-white/60 p-8 text-center">
+          <h2 className="text-lg font-semibold text-slate-800">ブログ</h2>
+          <p className="mt-2 text-sm text-slate-600">
+            技術メモや制作ログはブログページにまとめています。
+          </p>
+          <Link
+            href="/blog"
+            className="mt-4 inline-block text-sm font-medium text-indigo-600 hover:text-indigo-500"
+          >
+            ブログを見る
+          </Link>
+        </section>
+
         <section>
-          <h2 className="text-2xl font-bold mb-8 border-l-4 border-indigo-500 pl-4">Skills</h2>
+          <h2 className="mb-8 border-l-4 border-indigo-500 pl-4 text-2xl font-bold">
+            Skills
+          </h2>
           <div className="flex flex-wrap gap-3">
-            {['TypeScript', 'Python', 'Next.js', 'Java', 'PostgreSQL', 'supabase', 'Docker', 'ROS', 'OCaml'].map(skill => (
-              <span key={skill} className="px-4 py-2 bg-white border border-slate-200 rounded-lg text-sm font-medium shadow-sm">
+            {[
+              "TypeScript",
+              "Python",
+              "Next.js",
+              "Java",
+              "PostgreSQL",
+              "supabase",
+              "Docker",
+              "ROS",
+              "OCaml",
+            ].map((skill) => (
+              <span
+                key={skill}
+                className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium shadow-sm"
+              >
                 {skill}
               </span>
             ))}
@@ -97,7 +143,7 @@ export default function Portfolio() {
         </section>
       </main>
 
-      <footer className="text-center py-12 text-slate-400 text-sm">
+      <footer className="py-12 text-center text-sm text-slate-400">
         © 2026 Moriya Kero. Powered by Next.js & Moriyakero.
       </footer>
     </div>
