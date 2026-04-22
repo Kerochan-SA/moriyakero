@@ -8,7 +8,8 @@ export type LiveSetlistDbRow = {
   live_name: string;
   copy_from: string | null;
   video_url: string | null;
-  members: Record<string, string | null>;
+  // 1. members の型を Record から「オブジェクトの配列」に変更
+  members: { role: string; name: string }[] | null | undefined; 
   songs: string[];
   my_parts: string[];
   note: string | null;
@@ -48,14 +49,26 @@ export function memberNamesFromMembers(
 }
 
 export function dbRowToBandEntry(row: LiveSetlistDbRow): BandListEntry {
-  const membersByRole = membersRecordFromRow(row.members);
+  // 配列であることを保証
+  const membersArray = Array.isArray(row.members) ? row.members : [];
+
+  // 名前だけを抽出した配列を作成（これが統計に使われます）
+  const memberNames = membersArray
+    .map((m) => m.name)
+    .filter((name) => name && name.trim() !== "");
+
   return {
     date: row.performance_date,
     liveName: row.live_name,
     copyFrom: row.copy_from,
     videoUrl: row.video_url,
-    membersByRole,
-    memberNames: memberNamesFromMembers(membersByRole),
+    // 互換性のために membersByRole も残す場合、配列から無理やり Record を作ります
+    // (重複がある場合は後の人が上書きされますが、統計には影響しません)
+    membersByRole: membersArray.reduce((acc, m) => {
+      acc[m.role as MemberRoleKey] = m.name;
+      return acc;
+    }, {} as Record<MemberRoleKey, string | null>),
+    memberNames: memberNames, // ここが修正の肝です
     songs: row.songs ?? [],
     myParts: row.my_parts ?? [],
     note: row.note,

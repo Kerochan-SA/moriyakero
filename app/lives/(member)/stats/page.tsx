@@ -36,7 +36,7 @@ export default async function LivesStatsPage() {
       // ログインしていない（または環境変数がない）場合の処理
       // もし非ログインユーザーにも統計を見せたい場合は、
       // ここで別途 public 用の supabase クライアントを使って取得するロジックが必要です。
-      entries = []; 
+      entries = [];
     }
   } catch (error) {
     console.error(error);
@@ -55,40 +55,29 @@ export default async function LivesStatsPage() {
       <div className="flex flex-col gap-1">
         <h2 className="text-xl font-bold text-slate-900">演奏統計</h2>
         <p className="text-sm text-slate-600">
-          データベース上の全エントリからリアルタイムに集計しています。
+          これまでのすべての演奏活動から集計しています。
         </p>
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* メンバー別ランキング：権限がある場合のみ詳細を表示 */}
-        {canSeeNames ? (
-          <RankedTable
-            title="組んだ回数（メンバー別）"
-            description="自分以外のメンバーが登場した回数をカウント"
-            items={stats.partnerRankings}
-            maxRows={40}
-          />
-        ) : (
-          <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-            <h2 className="text-lg font-bold text-slate-900">組んだ回数（メンバー別）</h2>
-            <div className="mt-4 flex h-32 items-center justify-center rounded-lg border border-dashed border-slate-200 bg-slate-50">
-              <p className="text-sm text-slate-500 italic">
-                メンバー名はログイン時のみ表示されます。
-              </p>
-            </div>
-          </section>
-        )}
+        {/* メンバー別ランキング：常に表示 */}
+        <RankedTable
+          title="組んだ回数（メンバー別）"
+          description="自分以外のメンバーが登場した回数をカウント"
+          items={stats.partnerRankings}
+          initialMaxRows={40}
+        />
 
         <RankedTable
           title="コピー回数（コピー元）"
           items={stats.copyRankings}
-          maxRows={40}
+          initialMaxRows={40}
         />
-        
+
         <RankedTable
           title="自分のパート別"
           items={stats.partRankings}
-          maxRows={20}
+          initialMaxRows={20}
         />
       </div>
 
