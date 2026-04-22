@@ -6,9 +6,6 @@ export async function updateSession(request: NextRequest) {
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
   if (!url || !key) {
-    if (request.nextUrl.pathname.startsWith("/lives")) {
-      return NextResponse.redirect(new URL("/", request.url));
-    }
     return NextResponse.next({ request });
   }
 
@@ -36,8 +33,10 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const path = request.nextUrl.pathname;
+  const isEditRoute =
+    path === "/lives/entries/new" || /^\/lives\/entries\/[^/]+$/.test(path);
 
-  if (path.startsWith("/lives") && !user) {
+  if (isEditRoute && !user) {
     const redirectUrl = request.nextUrl.clone();
     redirectUrl.pathname = "/login";
     redirectUrl.searchParams.set("next", path + request.nextUrl.search);

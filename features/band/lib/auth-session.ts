@@ -6,7 +6,6 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 export type BandAccessState =
   | { kind: "no_env" }
   | { kind: "anon"; supabase: SupabaseClient }
-  | { kind: "no_member"; user: User; supabase: SupabaseClient }
   | { kind: "ok"; user: User; supabase: SupabaseClient };
 
 export async function getBandAccessState(): Promise<BandAccessState> {
@@ -26,20 +25,10 @@ export async function getBandAccessState(): Promise<BandAccessState> {
     return { kind: "anon", supabase };
   }
 
-  const { data: member } = await supabase
-    .from("band_members")
-    .select("user_id")
-    .eq("user_id", user.id)
-    .maybeSingle();
-
-  if (!member) {
-    return { kind: "no_member", user, supabase };
-  }
-
   return { kind: "ok", user, supabase };
 }
 
-/** メンバー向けレイアウト用（未設定・未ログイン・未登録を処理） */
+/** メンバー向けレイアウト用（未設定・未ログインを処理） */
 export async function assertBandLayoutAccess() {
   const s = await getBandAccessState();
   if (s.kind === "no_env") {
@@ -48,8 +37,17 @@ export async function assertBandLayoutAccess() {
   if (s.kind === "anon") {
     redirect("/login?next=/lives");
   }
-  if (s.kind === "no_member") {
-    redirect("/lives/no-access");
+  return { ok: true as const, user: s.user, supabase: s.supabase };
+}
+
+/** 編集画面用（未ログインを処理） */
+export async function assertBandEditorAccess(nextPath: string) {
+  const s = await getBandAccessState();
+  if (s.kind === "no_env") {
+    return { ok: false as const, reason: "no_env" as const };
+  }
+  if (s.kind === "anon") {
+    redirect(`/login?next=${encodeURIComponent(nextPath)}`);
   }
   return { ok: true as const, user: s.user, supabase: s.supabase };
 }

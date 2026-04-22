@@ -34,3 +34,35 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Environment Variables
+
+Create `.env.local` from `.env.example` and set the real values.
+
+```bash
+cp .env.example .env.local
+```
+
+## Prisma Setup (Supabase Postgres)
+
+This repository includes Prisma for database operations (seed/import/admin tooling).
+
+```bash
+npm run prisma:generate
+npm run prisma:pull
+```
+
+Useful commands:
+
+- `npm run prisma:studio`
+- `npm run prisma:migrate:dev`
+
+## Current Login Spec
+
+- Authentication method: email + password (`signInWithPassword`)
+- Login page: `/login`
+- Default post-login route: `/lives`
+- Route guard: `/lives` requires signed-in user
+- Authorization: signed-in user must exist in `public.band_members`
+- DB protection: `live_setlist_entries` access is enforced by RLS policies
+- Security note: authentication errors are intentionally generalized in UI

@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { SignOutButton } from "@/features/band/components/sign-out-button";
 
 const links = [
   { href: "/", label: "ホーム" },
@@ -8,7 +10,19 @@ const links = [
   { href: "/academics", label: "履修" },
 ] as const;
 
-export function SiteNav() {
+export async function SiteNav() {
+  let isLoggedIn = false;
+
+  try {
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    isLoggedIn = Boolean(user);
+  } catch {
+    isLoggedIn = false;
+  }
+
   return (
     <header className="sticky top-0 z-50 border-b border-slate-200 bg-white/90 backdrop-blur-md">
       <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-3">
@@ -31,6 +45,16 @@ export function SiteNav() {
               {label}
             </Link>
           ))}
+          {isLoggedIn ? (
+            <SignOutButton />
+          ) : (
+            <Link
+              href="/login"
+              className="rounded-md border border-slate-300 px-2 py-1.5 text-sm text-slate-700 transition hover:bg-slate-100 hover:text-slate-900 sm:px-3"
+            >
+              ログイン
+            </Link>
+          )}
         </nav>
       </div>
     </header>

@@ -73,9 +73,7 @@ export function SheetTable({ matrix, caption, maxBodyRows = 400 }: Props) {
       </div>
       {truncated ? (
         <p className="text-xs text-slate-500">
-          行数が多いため先頭 {maxBodyRows} 行のみ表示しています。全データは Excel または{" "}
-          <code className="rounded bg-slate-100 px-1">data/band/imported.json</code>{" "}
-          を参照してください。
+          行数が多いため先頭 {maxBodyRows} 行のみ表示しています。
         </p>
       ) : null}
     </div>

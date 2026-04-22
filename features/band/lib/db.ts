@@ -1,6 +1,6 @@
-import type { MemberRoleKey } from "@/lib/band/constants";
-import { MEMBER_ROLE_KEYS } from "@/lib/band/constants";
-import type { BandListEntry } from "@/lib/band/types";
+import type { MemberRoleKey } from "@/features/band/lib/constants";
+import { MEMBER_ROLE_KEYS } from "@/features/band/lib/constants";
+import type { BandListEntry } from "@/features/band/lib/types";
 
 export type LiveSetlistDbRow = {
   id: string;

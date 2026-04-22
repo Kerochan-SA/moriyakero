@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
-import { BandEntryForm } from "@/components/band/band-entry-form";
+import { assertBandEditorAccess } from "@/features/band/lib/auth-session";
+import { BandEntryForm } from "@/features/band/components/band-entry-form";
 
 export const metadata: Metadata = {
   title: "新規エントリ",
@@ -12,6 +13,7 @@ type Props = {
 };
 
 export default async function NewBandEntryPage({ searchParams }: Props) {
+  await assertBandEditorAccess("/lives/entries/new");
   const sp = await searchParams;
   return (
     <div>

@@ -2,17 +2,22 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import type { MemberRoleKey } from "@/lib/band/constants";
-import { MEMBER_ROLE_KEYS } from "@/lib/band/constants";
-import { getBandAccessState } from "@/lib/auth/band-session";
-import { membersRecordFromRow } from "@/lib/band/db";
+import { MEMBER_ROLE_KEYS } from "@/features/band/lib/constants";
+import { getBandAccessState } from "@/features/band/lib/auth-session";
+import { membersRecordFromRow } from "@/features/band/lib/db";
+
+type MemberItem = {
+  role: string;
+  name: string;
+};
 
 export type BandEntryFormState = {
   performance_date: string;
   live_name: string;
   copy_from: string;
   video_url: string;
-  members: Record<MemberRoleKey, string>;
+  // Record ではなく MemberItem の配列にする
+  members: MemberItem[]; 
   songs_text: string;
   my_parts_text: string;
   note: string;
@@ -32,12 +37,13 @@ function parseParts(text: string): string[] {
     .filter(Boolean);
 }
 
-function membersToJson(m: Record<MemberRoleKey, string>) {
-  const o: Record<string, string> = {};
-  for (const [k, v] of Object.entries(m)) {
-    if (v.trim()) o[k] = v.trim();
-  }
-  return o;
+function normalizeMembers(members: MemberItem[]): MemberItem[] {
+  return members
+    .map((m) => ({
+      role: m.role.trim(),
+      name: m.name.trim(),
+    }))
+    .filter((m) => m.role || m.name);
 }
 
 export async function createBandEntry(form: BandEntryFormState) {
@@ -47,12 +53,15 @@ export async function createBandEntry(form: BandEntryFormState) {
   const songs = parseLines(form.songs_text);
   const my_parts = parseParts(form.my_parts_text);
 
+  // 空の名前や役割の行を除外して、配列のまま保存
+  const cleanMembers = normalizeMembers(form.members);
+
   const { error } = await session.supabase.from("live_setlist_entries").insert({
     performance_date: form.performance_date,
     live_name: form.live_name.trim(),
     copy_from: form.copy_from.trim() || null,
     video_url: form.video_url.trim() || null,
-    members: membersToJson(form.members),
+    members: cleanMembers, // ここが配列 [ {role: "Gt.", name: "A"}, {role: "Gt.", name: "B"} ] になる
     songs,
     my_parts,
     note: form.note.trim() || null,
@@ -73,6 +82,7 @@ export async function updateBandEntry(id: string, form: BandEntryFormState) {
 
   const songs = parseLines(form.songs_text);
   const my_parts = parseParts(form.my_parts_text);
+  const cleanMembers = normalizeMembers(form.members);
 
   const { error } = await session.supabase
     .from("live_setlist_entries")
@@ -81,7 +91,7 @@ export async function updateBandEntry(id: string, form: BandEntryFormState) {
       live_name: form.live_name.trim(),
       copy_from: form.copy_from.trim() || null,
       video_url: form.video_url.trim() || null,
-      members: membersToJson(form.members),
+      members: cleanMembers,
       songs,
       my_parts,
       note: form.note.trim() || null,
@@ -127,15 +137,21 @@ export async function getBandEntryForEdit(id: string) {
 
   if (error || !data) return null;
 
-  const membersFull = membersRecordFromRow(
-    data.members as Record<string, unknown>,
-  );
-  const members: Record<MemberRoleKey, string> = {} as Record<
-    MemberRoleKey,
-    string
-  >;
-  for (const k of MEMBER_ROLE_KEYS) {
-    members[k] = membersFull[k] ?? "";
+  // --- データの正規化（Normalization） ---
+  let membersArray: { role: string; name: string }[] = [];
+  
+  if (Array.isArray(data.members)) {
+    // すでに配列形式の場合
+    membersArray = data.members as { role: string; name: string }[];
+  } else if (typeof data.members === "object" && data.members !== null) {
+    // 古いレコード（オブジェクト）形式が残っている場合の変換
+    membersArray = Object.entries(data.members as Record<string, string>)
+      .map(([role, name]) => ({ role, name }));
+  }
+
+  // 1行も無い場合は空の1行を表示させる（UIの利便性のため）
+  if (membersArray.length === 0) {
+    membersArray = [{ role: "", name: "" }];
   }
 
   const state: BandEntryFormState = {
@@ -143,10 +159,12 @@ export async function getBandEntryForEdit(id: string) {
     live_name: data.live_name,
     copy_from: data.copy_from ?? "",
     video_url: data.video_url ?? "",
-    members,
-    songs_text: (data.songs as string[]).join("\n"),
-    my_parts_text: (data.my_parts as string[]).join(" · "),
+    members: membersArray, // 配列として渡す
+    songs_text: Array.isArray(data.songs) ? data.songs.join("\n") : "",
+    my_parts_text: Array.isArray(data.my_parts) ? data.my_parts.join(" · ") : "",
     note: data.note ?? "",
   };
+  
   return state;
 }
+2

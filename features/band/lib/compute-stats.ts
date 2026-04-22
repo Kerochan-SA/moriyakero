@@ -1,5 +1,5 @@
-import { BAND_SELF_MEMBER_NAMES } from "@/data/band/config";
-import type { BandListEntry, RankedItem } from "@/lib/band/types";
+import { BAND_SELF_MEMBER_NAMES } from "@/features/band/data/config";
+import type { BandListEntry, RankedItem } from "@/features/band/lib/types";
 
 const selfSet = new Set<string>(BAND_SELF_MEMBER_NAMES);
 

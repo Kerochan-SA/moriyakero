@@ -7,10 +7,15 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "prisma:generate": "prisma generate",
+    "prisma:pull": "prisma db pull",
+    "prisma:studio": "prisma studio",
+    "prisma:migrate:dev": "prisma migrate dev",
     "import:band": "node scripts/import-band-xlsx.mjs",
     "seed:band": "node --env-file=.env.local scripts/seed-supabase-from-json.mjs"
   },
   "dependencies": {
+    "@prisma/client": "^6.19.0",
     "@supabase/ssr": "^0.10.0",
     "@supabase/supabase-js": "^2.101.1",
     "gray-matter": "^4.0.3",
@@ -30,6 +35,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.2",
     "postcss": "^8.5.8",
+    "prisma": "^6.19.0",
     "tailwindcss": "^4.2.2",
     "typescript": "^5"
   }

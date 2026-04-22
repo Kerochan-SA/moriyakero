@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { getBandEntryForEdit } from "@/actions/band-entries";
-import { BandEntryForm } from "@/components/band/band-entry-form";
+import { assertBandEditorAccess } from "@/features/band/lib/auth-session";
+import { getBandEntryForEdit } from "@/features/band/actions/entries";
+import { BandEntryForm } from "@/features/band/components/band-entry-form";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function EditBandEntryPage({ params }: Props) {
   const { id } = await params;
+  await assertBandEditorAccess(`/lives/entries/${id}`);
   const initial = await getBandEntryForEdit(id);
   if (!initial) notFound();
 

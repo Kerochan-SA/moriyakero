@@ -1,4 +1,4 @@
-import type { RankedItem } from "@/lib/band/types";
+import type { RankedItem } from "@/features/band/lib/types";
 
 type Props = {
   title: string;
