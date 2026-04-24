@@ -21,22 +21,37 @@ export default async function LivesEntriesPage({ searchParams }: Props) {
   const s = await getBandAccessState();
   const canEdit = s.kind === "ok";
 
+  // 型安全に supabase クライアントを取得
+  const supabase = "supabase" in s ? s.supabase : null;
+
   let rows: any[] = [];
 
   try {
-    if (s.kind === "ok") {
-      rows = await fetchEntriesForList(s.supabase, {
+    // ログイン・非ログイン問わず、環境変数があればデータを取得
+    if (supabase) {
+      rows = await fetchEntriesForList(supabase, {
         q: sp.q ?? null,
         date: sp.date ?? null,
         live: sp.live ?? null,
       });
-    } else {
-      // ログインしていない場合は空にする
-      rows = [];
     }
   } catch (error) {
-    // エラー処理
+    console.error(error);
   }
+
+  // --- 匿名化ロジック ---
+  // 非ログイン時は各ロール（vocal, guitar1等）に入っている個人名を「メンバー」に書き換える
+  const displayRows = canEdit 
+    ? rows 
+    : rows.map(row => {
+        const anonymizedRow = { ...row };
+        MEMBER_ROLE_KEYS.forEach(key => {
+          if (anonymizedRow[key]) {
+            anonymizedRow[key] = "メンバー";
+          }
+        });
+        return anonymizedRow;
+      });
 
   const qDefault = sp.q ?? "";
   const dateDefault = sp.date ?? "";
@@ -50,8 +65,8 @@ export default async function LivesEntriesPage({ searchParams }: Props) {
           ライブ名・コピー元・備考・曲名から検索できます。
         </p>
         {!canEdit && (
-          <p className="mt-2 inline-block rounded-md bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-700 border border-amber-100">
-            ※ メンバー名と編集機能はログインメンバー限定です。
+          <p className="mt-2 inline-block rounded-md bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-600 border border-slate-200">
+            ※ メンバー名は匿名化されています。編集機能は管理者限定です。
           </p>
         )}
       </div>
@@ -103,8 +118,8 @@ export default async function LivesEntriesPage({ searchParams }: Props) {
         </p>
       </div>
 
-      {/* 切り出したコンポーネントを呼び出す */}
-      <LiveEntriesTable rows={rows} canEdit={canEdit} />
+      {/* 匿名化済みのデータをテーブルに渡す */}
+      <LiveEntriesTable rows={displayRows} canEdit={canEdit} />
     </div>
   );
 }

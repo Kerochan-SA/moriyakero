@@ -15,28 +15,24 @@ export default async function LivesStatsPage() {
   const s = await getBandAccessState();
   const canSeeNames = s.kind === "ok";
 
+  // 型安全に supabase クライアントを取得
+  const supabase = "supabase" in s ? s.supabase : null;
+
   let entries: any[] = []; // 初期値は空配列
 
   try {
-    // 1. まず s.kind をチェックして、型を "ok" に確定させる
-    if (s.kind === "ok") {
-      // この中では TypeScript が「s は supabase プロパティを持っている」と確信してくれます
-      const { data, error } = await s.supabase
+    // supabaseクライアントがあれば（環境変数があれば）、ログイン・非ログイン問わずデータ取得
+    if (supabase) {
+      const { data, error } = await supabase
         .from("live_setlist_entries")
         .select("*")
         .order("performance_date", { ascending: false });
 
       if (error) throw new Error(error.message);
 
-      // 2. data が存在するブロック内で entries を更新する
       if (data) {
         entries = data.map((r) => dbRowToBandEntry(r as LiveSetlistDbRow));
       }
-    } else {
-      // ログインしていない（または環境変数がない）場合の処理
-      // もし非ログインユーザーにも統計を見せたい場合は、
-      // ここで別途 public 用の supabase クライアントを使って取得するロジックが必要です。
-      entries = [];
     }
   } catch (error) {
     console.error(error);
@@ -50,12 +46,26 @@ export default async function LivesStatsPage() {
   // 3. 取得できた entries（ログイン時はDBから、それ以外は空）で統計を計算
   const stats = computeBandStats(entries);
 
+  // --- 匿名化ロジック ---
+  // 共演メンバー名のみ、非ログイン時は「共演者 A, B...」に置き換える
+  const displayPartnerRankings = canSeeNames
+    ? stats.partnerRankings
+    : stats.partnerRankings.map((r, i) => ({
+        ...r,
+        label: `共演者 ${String.fromCharCode(65 + i)}`,
+      }));
+
   return (
     <div className="space-y-10">
       <div className="flex flex-col gap-1">
         <h2 className="text-xl font-bold text-slate-900">演奏統計</h2>
         <p className="text-sm text-slate-600">
           これまでのすべての演奏活動から集計しています。
+          {!canSeeNames && entries.length > 0 && (
+            <span className="block mt-1 text-xs text-slate-400 italic">
+              ※ プライバシー保護のため、メンバー名は匿名化されています。
+            </span>
+          )}
         </p>
       </div>
 
@@ -63,8 +73,8 @@ export default async function LivesStatsPage() {
         {/* メンバー別ランキング：常に表示 */}
         <RankedTable
           title="組んだ回数（メンバー別）"
-          description="自分以外のメンバーが登場した回数をカウント"
-          items={stats.partnerRankings}
+          description={canSeeNames ? "自分以外のメンバーが登場した回数をカウント" : "登場回数のみ表示しています"}
+          items={displayPartnerRankings}
           initialMaxRows={40}
         />
 

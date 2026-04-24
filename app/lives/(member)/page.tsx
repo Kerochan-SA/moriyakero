@@ -11,16 +11,19 @@ export const dynamic = "force-dynamic";
 export default async function LivesOverviewPage() {
   const s = await getBandAccessState();
   const canEdit = s.kind === "ok";
+  
+  // 読み取り用のSupabaseクライアント（s.supabaseがない場合は、公開用クライアントが必要な場合があります）
+  // ここでは getBandAccessState が常にクライアントを返すと仮定、あるいは別途作成したものを想定します。
+  const supabase = 'supabase' in s ? s.supabase : null;
 
-  // 変数の初期化
   let entries: ReturnType<typeof dbRowToBandEntry>[] = [];
   let groups: { performance_date: string; live_name: string; count: number }[] = [];
   let listLength = 0;
 
   try {
-    // 1. Supabaseからデータを取得（ログイン時のみ実行）
-    if (canEdit && s.supabase) {
-      const { data, error } = await s.supabase
+    // 1. データの取得（ログイン状態に関わらず実行）
+    if (supabase) {
+      const { data, error } = await supabase
         .from("live_setlist_entries")
         .select("*")
         .order("performance_date", { ascending: false });
@@ -30,21 +33,13 @@ export default async function LivesOverviewPage() {
       const list = (data ?? []) as LiveSetlistDbRow[];
       listLength = list.length;
       
-      // データの変換
       entries = list.map((r) => dbRowToBandEntry(r));
-      
-      // ライブ単位でのグルーピング
       groups = groupByLive(
         list.map((r) => ({
           performance_date: r.performance_date,
           live_name: r.live_name,
         })),
       );
-    } else {
-      // 非ログイン時は空の状態にする
-      entries = [];
-      groups = [];
-      listLength = 0;
     }
   } catch (e) {
     console.error(e);
@@ -53,7 +48,7 @@ export default async function LivesOverviewPage() {
     );
   }
 
-  // 2. 統計の計算（データがある場合のみ）
+  // 2. 統計の計算（常に計算）
   const stats = computeBandStats(entries);
   const topPartners = stats.partnerRankings.slice(0, 5);
   const topCopies = stats.copyRankings.slice(0, 5);
@@ -70,12 +65,15 @@ export default async function LivesOverviewPage() {
         </div>
         
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
-          <p className="text-xs font-medium text-slate-500">集計上の自分</p>
+          <p className="text-xs font-medium text-slate-500">集計対象（自分）</p>
           <p className="mt-1 text-sm font-semibold text-slate-900">
-            {canEdit ? BAND_SELF_MEMBER_NAMES.join(" / ") : "ログインで表示"}
+            {/* 非ログイン時は「メンバー1 / 2」のように表示 */}
+            {canEdit 
+              ? BAND_SELF_MEMBER_NAMES.join(" / ") 
+              : BAND_SELF_MEMBER_NAMES.map((_, i) => `メンバー${i + 1}`).join(" / ")}
           </p>
-          <p className="mt-1 text-xs text-slate-500">
-            <code className="rounded bg-slate-100 px-1">config.ts</code>
+          <p className="mt-1 text-xs text-slate-500 italic">
+            {!canEdit && "（ログインで実名表示）"}
           </p>
         </div>
 
@@ -93,17 +91,17 @@ export default async function LivesOverviewPage() {
             <li>
               {canEdit ? (
                 <Link className="text-indigo-600 hover:text-indigo-500 font-medium" href="/lives/entries/new">
-                  ＋ 新規エントリ
+                  ＋ 新規エントリを追加
                 </Link>
               ) : (
-                <Link className="text-indigo-600 hover:text-indigo-500" href="/login?next=/lives/entries/new">
-                  ログインして追加
+                <Link className="text-slate-400 hover:text-slate-500" href="/login?next=/lives/entries/new">
+                  管理者ログイン
                 </Link>
               )}
             </li>
             <li>
               <Link className="text-indigo-600 hover:text-indigo-500" href="/lives/entries">
-                一覧・検索
+                すべての一覧・検索
               </Link>
             </li>
           </ul>
@@ -114,20 +112,20 @@ export default async function LivesOverviewPage() {
       <section className="grid gap-8 lg:grid-cols-2">
         <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm">
           <h2 className="text-lg font-bold text-slate-900">共演が多いメンバー（上位5）</h2>
-          {canEdit ? (
-            <ol className="mt-4 space-y-2 text-sm">
-              {topPartners.map((r, i) => (
-                <li key={`${i}-${r.label}`} className="flex justify-between gap-4 border-b border-slate-50 pb-1">
-                  <span className="text-slate-600">{i + 1}. {r.label}</span>
-                  <span className="tabular-nums font-semibold text-slate-900">{r.count}</span>
-                </li>
-              ))}
-              {topPartners.length === 0 && <p className="text-slate-400 py-2">データがありません</p>}
-            </ol>
-          ) : (
-            <p className="mt-4 text-sm text-slate-500 italic">
-              ログインすると詳細な統計が表示されます。
-            </p>
+          <ol className="mt-4 space-y-2 text-sm">
+            {topPartners.map((r, i) => (
+              <li key={`${i}-${r.label}`} className="flex justify-between gap-4 border-b border-slate-50 pb-1">
+                <span className="text-slate-600">
+                  {/* 非ログイン時は「共演者A」のように匿名化 */}
+                  {i + 1}. {canEdit ? r.label : `共演者 ${String.fromCharCode(65 + i)}`}
+                </span>
+                <span className="tabular-nums font-semibold text-slate-900">{r.count}</span>
+              </li>
+            ))}
+            {topPartners.length === 0 && <p className="text-slate-400 py-2">データがありません</p>}
+          </ol>
+          {!canEdit && topPartners.length > 0 && (
+             <p className="mt-2 text-[10px] text-slate-400 text-right">※名前は匿名化されています</p>
           )}
         </div>
 
@@ -145,9 +143,9 @@ export default async function LivesOverviewPage() {
         </div>
       </section>
 
-      {/* ライブ一覧（直近） */}
+      {/* ライブ一覧：常に表示 */}
       <section>
-        <h2 className="mb-3 text-lg font-bold text-slate-900">ライブごと（直近）</h2>
+        <h2 className="mb-3 text-lg font-bold text-slate-900">ライブごと（直近20件）</h2>
         <p className="mb-4 text-xs text-slate-500">
           日付とライブ名でまとめています。
         </p>
@@ -180,9 +178,7 @@ export default async function LivesOverviewPage() {
           </>
         ) : (
           <div className="text-center py-10 bg-slate-50 rounded-xl border border-dashed border-slate-200">
-            <p className="text-sm text-slate-500">
-              {canEdit ? "まだエントリがありません。" : "ログインしてデータを表示してください。"}
-            </p>
+            <p className="text-sm text-slate-500">データが見つかりませんでした。</p>
           </div>
         )}
       </section>
